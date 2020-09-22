@@ -13,7 +13,7 @@ local function bodyMatrix(body)
     local a = body:getAngle()
     return posAngMatrix(x, y, a)
 end
-local function drawFrame(m)
+local function drawAxis(m)
     local xdir = m * matrix{10, 0, 1}
     local ydir = m * matrix{0, 10, 1}
     love.graphics.setColor(1, 0, 0)
@@ -93,7 +93,7 @@ end
 
 function actuator:draw()
     love.graphics.polygon("fill", self.body:getWorldPoints(self.shape:getPoints()))
-    drawFrame(self.frameWorld)
+    drawAxis(self.frameWorld)
     self.body:applyForce(-0.1,0)
 end
 
