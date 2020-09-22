@@ -55,6 +55,9 @@ end
 
 function robot:compute()
     for k, link in ipairs(self.links) do
+        link:measureJoint()
+    end
+    for k, link in ipairs(self.links) do
         link:calcWorld()
     end
     for k, link in ipairs(self.links) do
@@ -76,6 +79,8 @@ function actuator:initialize(parent, frame, shape)
     self.parent = parent
     self.frame = frame
     self.shape = shape
+    self.theta = 0
+    self.dtheta = 0
 end
 
 function actuator:createBody()
@@ -97,15 +102,18 @@ function actuator:applyTorque(t)
     self.body:applyTorque(t)
 end
 
+function actuator:measureJoint()
+    self.theta, self.dtheta = self.joint:getJointAngle(), self.joint:getJointSpeed()
+end
+
 function actuator:jointControl()
-    local theta, dtheta = self.joint:getJointAngle(), self.joint:getJointSpeed()
-    local perr = (0 - theta) * 200
-    local derr = (0 - dtheta) * 20
+    local perr = (0 - self.theta) * 200
+    local derr = (0 - self.dtheta) * 20
     self:applyTorque(perr + derr)
 end
 
 function actuator:calcWorld()
-    self.frameWorld = self.parent.frameWorld * self.frame
+    self.frameWorld = self.parent.frameWorld * self.frame * posAngMatrix(0, 0, self.theta)
 end
 
 robot:new()
