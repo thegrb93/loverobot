@@ -18,22 +18,17 @@ local function drawAxis(m)
     local ydir = m * matrix{0, 10, 1}
     love.graphics.setColor(1, 0, 0)
     love.graphics.line(m[1][3], m[2][3], xdir[1][1], xdir[2][1])
-    love.graphics.setColor(0, 1, 0)
+    love.graphics.setColor(0, 0.7, 0)
     love.graphics.line(m[1][3], m[2][3], ydir[1][1], ydir[2][1])
     love.graphics.setColor(1, 1, 1)
 end
 
-local jointChain = {
-    {posAngMatrix(0, 0, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
-    {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
-    {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
-    {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
-}
-
+love.physics.setMeter(128)
 robot.world = love.physics.newWorld(0, 9.8)
 robot.worldbody = love.physics.newBody(robot.world)
 robot.worldbodyf = love.physics.newFixture(robot.worldbody, love.physics.newRectangleShape(scrw/2, scrh - 25, scrw, 50))
 function robot:initialize()
+    self.dt = 1/winmode.refreshrate
     self.frameWorld = posAngMatrix(scrw/2, scrh - 55, 0)
     self.body = robot.worldbody
     self:buildActuators()
@@ -41,6 +36,13 @@ function robot:initialize()
 end
 
 function robot:buildActuators()
+    local jointChain = {
+        {posAngMatrix(0, 0, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
+        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
+        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
+        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
+    }
+
     self.links = {}
     for i, chain in ipairs(jointChain) do
         self.links[i] = actuator:new(self.links[i-1] or self, chain[1], chain[2])
@@ -67,7 +69,7 @@ end
 
 function robot:render()
     self:compute()
-    robot.world:update(1/60)
+    robot.world:update(self.dt)
     
     love.graphics.rectangle("fill", 0, scrh - 50, scrw, 50)
     for k, link in ipairs(self.links) do
@@ -94,7 +96,7 @@ end
 function actuator:draw()
     love.graphics.polygon("fill", self.body:getWorldPoints(self.shape:getPoints()))
     drawAxis(self.frameWorld)
-    self.body:applyForce(-0.1,0)
+    self.body:applyForce(-0.5,0)
 end
 
 function actuator:applyTorque(t)
