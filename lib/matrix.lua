@@ -134,9 +134,11 @@ function matrix:new( rows, columns, value )
 	if type( rows ) == "table" then
 		-- check for vector
 		if type(rows[1]) ~= "table" then -- expect a vector
-			return setmetatable( {{rows[1]},{rows[2]},{rows[3]}},matrix_meta )
+			for i=1, #rows do
+				rows[i] = {rows[i]}
+			end
 		end
-		return setmetatable( rows,matrix_meta )
+		return setmetatable(rows, matrix_meta)
 	end
 	-- get matrix table
 	local mtx = {}
