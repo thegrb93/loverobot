@@ -82,7 +82,9 @@ function robot:compute()
     for k, link in ipairs(self.links) do
         link:calcForward()
     end
-    for i=#self.links, 1, -1 do
+    self.links[#self.links].f = self.links[#self.links].F
+    self.links[#self.links].n = self.links[#self.links].N
+    for i=#self.links, 2, -1 do
         local link = self.links[i]
         link:calcBackward()
     end
@@ -105,14 +107,17 @@ function actuator:initialize(parent, frame, shape)
     self.parent = parent
     self.frame = frame
     self.jointFrame = frame
-    self.frameinv = invertHMatrix(frame)
     self.shape = shape
+    self.ltheta = 0
 
     self.theta = posAngMatrix(0, 0, 0)
     self.dtheta = matrix{0,0,0,0}
 
     self.targetDTheta = matrix{0,0,0,0}
     self.targetDDTheta = matrix{0,0,0,0}
+    
+    self.f = matrix{0,0,0,0}
+    self.n = matrix{0,0,0,0}
 
     self:createBody()
 end
@@ -145,31 +150,43 @@ end
 
 function actuator:measureJoint()
     local theta, dtheta = self.joint:getJointAngle(), self.joint:getJointSpeed()
+    local ddtheta = (dtheta - self.ltheta) / robot.dt
+    self.ltheta = dtheta
     self.theta = posAngMatrix(0, 0, theta)
     self.dtheta = matrix{0,0,dtheta,0}
-    
+
+    self.targetDTheta = matrix{0,0,dtheta-theta*0,0}
+    self.targetDDTheta = matrix{0,0,ddtheta,0}
+
     self.jointFrame = self.frame * self.theta
+    self.jointFrameInv = invertHMatrix(self.jointFrame)
     self.frameWorld = self.parent.frameWorld * self.jointFrame
 end
 
 function actuator:jointControl()
-    local perr = (0 - self.theta) * 200
-    local derr = (0 - self.dtheta) * 20
-    self:applyTorque(perr + derr)
+    local perr = (0 - self.theta[3][1]) * 200
+    local derr = (0 - self.dtheta[3][1]) * 20
+    self:applyTorque(self.n[3][1]*0.1)
+    self.body:applyForce(-2,0)
 end
 
 function actuator:calcForward()
+    local pos = self.parent.jointFrame * matrix{self.frame[1][4], self.frame[2][4], 0, 0}
+
     self.angvel = self.jointFrame * self.parent.angvel + self.targetDTheta
     self.angaccel = self.jointFrame * self.parent.angaccel + (self.jointFrame * self.parent.angvel):cross(self.targetDTheta) + self.targetDDTheta
 
-    local pos = self.parent.jointFrame * matrix{self.frame[1][4], self.frame[2][4], self.frame[3][4], 0}
     self.vel = self.jointFrame * (self.parent.angaccel:cross(pos) + self.parent.angvel:cross(self.parent.angvel:cross(pos)) + self.parent.vel)
     self.velC = self.angaccel:cross(self.centerOfMass) + self.angvel:cross(self.angvel:cross(self.centerOfMass)) + self.vel
+
     self.F = self.mass * self.velC
     self.N = self.inertia * self.angaccel + self.angvel:cross(self.inertia * self.angvel)
 end
 
 function actuator:calcBackward()
+    local pos = self.parent.jointFrame * matrix{self.frame[1][4], self.frame[2][4], 0, 0}
+    self.parent.f = self.jointFrameInv * self.f + self.parent.F
+    self.parent.n = self.jointFrameInv * self.n + self.parent.centerOfMass:cross(self.parent.F) + pos:cross(self.jointFrameInv*self.f) + self.parent.N
 end
 
 robot:new()

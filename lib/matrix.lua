@@ -1083,6 +1083,7 @@ function matrix.cross( m1, m2 )
 	mtx[1] = { m1[2][1]*m2[3][1] - m1[3][1]*m2[2][1] }
 	mtx[2] = { m1[3][1]*m2[1][1] - m1[1][1]*m2[3][1] }
 	mtx[3] = { m1[1][1]*m2[2][1] - m1[2][1]*m2[1][1] }
+    for i=4, #m1 do mtx[i]={0} end
 	return setmetatable( mtx, matrix_meta )
 end
 
