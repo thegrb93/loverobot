@@ -75,18 +75,12 @@ function robot:buildActuators()
         {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
         {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
         {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
-        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
-        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
-        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
     }
 
     self.links = {}
     for i, chain in ipairs(jointChain) do
         self.links[i] = actuator:new(self.links[i-1] or self, chain[1], chain[2])
     end
-    self.links[2].targetTheta = math.pi/2
-    self.links[4].targetTheta = -math.pi/2
-    self.links[6].targetTheta = math.pi/2
 end
 
 function robot:compute()
@@ -169,8 +163,8 @@ function actuator:measureJoint()
     self.theta = posAngMatrix(0, 0, theta)
     self.dtheta = matrix{0,0,dtheta,0}
 
-    self.targetDTheta = matrix{0,0,0,0}
-    self.targetDDTheta = matrix{0,0,angNorm(self.targetTheta - theta)*4 - dtheta*2.5,0}
+    self.targetDTheta = self.dtheta
+    self.targetDDTheta = matrix{0,0,angNorm(self.targetTheta - theta)*8 - dtheta*5,0}
 
     self.jointFrame = self.frame * self.theta
     self.jointFrameInv = invertHMatrix(self.jointFrame)
