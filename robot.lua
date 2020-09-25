@@ -40,6 +40,9 @@ local function drawAxis(m)
     love.graphics.line(m[1][4], m[2][4], ydir[1][1], ydir[2][1])
     love.graphics.setColor(1, 1, 1)
 end
+local function angNorm(x)
+    return (x+math.pi)%(2*math.pi)-math.pi
+end
 
 love.physics.setMeter(128)
 local G = 9.8
@@ -52,7 +55,6 @@ function robot:initialize()
     self.frameWorld = posAngMatrix(scrw/2, scrh - 55, 0)
     self.body = robot.worldbody
 
-    self.vel = matrix{0,0,0,0}
     self.angvel = matrix{0,0,0,0}
     self.accel = matrix{0,-G,0,0}
     self.angaccel = matrix{0,0,0,0}
@@ -78,6 +80,7 @@ function robot:buildActuators()
     for i, chain in ipairs(jointChain) do
         self.links[i] = actuator:new(self.links[i-1] or self, chain[1], chain[2])
     end
+    self.links[2].targetTheta = math.pi/2
 end
 
 function robot:compute()
@@ -117,6 +120,7 @@ function actuator:initialize(parent, frame, shape)
     self.theta = posAngMatrix(0, 0, 0)
     self.dtheta = matrix{0,0,0,0}
 
+    self.targetTheta = 0
     self.targetDTheta = matrix{0,0,0,0}
     self.targetDDTheta = matrix{0,0,0,0}
     
@@ -158,7 +162,7 @@ function actuator:measureJoint()
     self.dtheta = matrix{0,0,dtheta,0}
 
     self.targetDTheta = matrix{0,0,0,0}
-    self.targetDDTheta = matrix{0,0,-theta*4 - dtheta*2,0}
+    self.targetDDTheta = matrix{0,0,angNorm(self.targetTheta - theta)*4 - dtheta*2.5,0}
 
     self.jointFrame = self.frame * self.theta
     self.jointFrameInv = invertHMatrix(self.jointFrame)
@@ -166,8 +170,6 @@ function actuator:measureJoint()
 end
 
 function actuator:jointControl()
-    local perr = (0 - self.theta[3][1]) * 200
-    local derr = (0 - self.dtheta[3][1]) * 20
     self:applyTorque(self.n[3][1])
 end
 
@@ -177,10 +179,10 @@ function actuator:calcForward()
     self.angvel = self.jointFrame * self.parent.angvel + self.targetDTheta
     self.angaccel = self.jointFrame * self.parent.angaccel + (self.jointFrame * self.parent.angvel):cross(self.targetDTheta) + self.targetDDTheta
 
-    self.vel = self.jointFrame * (self.parent.angaccel:cross(pos) + self.parent.angvel:cross(self.parent.angvel:cross(pos)) + self.parent.vel)
-    self.velC = self.angaccel:cross(self.centerOfMass) + self.angvel:cross(self.angvel:cross(self.centerOfMass)) + self.vel
+    self.accel = self.jointFrame * (self.parent.angaccel:cross(pos) + self.parent.angvel:cross(self.parent.angvel:cross(pos)) + self.parent.accel)
+    self.accelC = self.angaccel:cross(self.centerOfMass) + self.angvel:cross(self.angvel:cross(self.centerOfMass)) + self.accel
 
-    self.F = self.mass * self.velC
+    self.F = self.mass * self.accelC
     self.N = self.inertia * self.angaccel + self.angvel:cross(self.inertia * self.angvel)
 end
 
