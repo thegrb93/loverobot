@@ -56,7 +56,7 @@ function robot:initialize()
     self.body = robot.worldbody
 
     self.angvel = matrix{0,0,0,0}
-    self.accel = matrix{0,-G,0,0}
+    self.accel = matrix{0,G,0,0}
     self.angaccel = matrix{0,0,0,0}
 
     self:buildActuators()
@@ -81,6 +81,7 @@ function robot:buildActuators()
         self.links[i] = actuator:new(self.links[i-1] or self, chain[1], chain[2])
     end
     self.links[2].targetTheta = math.pi/2
+    self.links[4].targetTheta = -math.pi/2
 end
 
 function robot:compute()
