@@ -49,7 +49,8 @@ local G = 9.8
 robot.world = love.physics.newWorld(0, G)
 robot.worldbody = love.physics.newBody(robot.world)
 robot.worldbodyf = love.physics.newFixture(robot.worldbody, love.physics.newRectangleShape(scrw/2, scrh - 25, scrw, 50))
-robot.dt = 1/winmode.refreshrate
+robot.numIter = 1
+robot.dt = 1/winmode.refreshrate/robot.numIter
 function robot:initialize()
     self.jointFrame = posAngMatrix(0, 0, 0)
     self.frameWorld = posAngMatrix(scrw/2, scrh - 55, 0)
@@ -74,6 +75,9 @@ function robot:buildActuators()
         {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
         {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
         {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
+        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
+        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
+        {posAngMatrix(0, -50, 0), love.physics.newRectangleShape(0, -25, 5, 50)},
     }
 
     self.links = {}
@@ -82,6 +86,7 @@ function robot:buildActuators()
     end
     self.links[2].targetTheta = math.pi/2
     self.links[4].targetTheta = -math.pi/2
+    self.links[6].targetTheta = math.pi/2
 end
 
 function robot:compute()
@@ -100,11 +105,13 @@ function robot:compute()
     for k, link in ipairs(self.links) do
         link:jointControl()
     end
+    robot.world:update(robot.dt)
 end
 
 function robot:render()
-    self:compute()
-    robot.world:update(robot.dt)
+    for i=1, robot.numIter do
+        self:compute()
+    end
     
     love.graphics.rectangle("fill", 0, scrh - 50, scrw, 50)
     for k, link in ipairs(self.links) do
