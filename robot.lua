@@ -59,6 +59,11 @@ function robot:initialize()
 
     self:buildActuators()
     hook.add("render", self)
+    hook.add("keypressed", self)
+end
+
+function robot:keypressed()
+    self.links[1].body:applyForce(-2000,0)
 end
 
 function robot:buildActuators()
@@ -73,7 +78,6 @@ function robot:buildActuators()
     for i, chain in ipairs(jointChain) do
         self.links[i] = actuator:new(self.links[i-1] or self, chain[1], chain[2])
     end
-	self.links[1].body:applyForce(-2000,0)
 end
 
 function robot:compute()
