@@ -73,6 +73,7 @@ function robot:buildActuators()
     for i, chain in ipairs(jointChain) do
         self.links[i] = actuator:new(self.links[i-1] or self, chain[1], chain[2])
     end
+	self.links[1].body:applyForce(-2000,0)
 end
 
 function robot:compute()
@@ -108,7 +109,6 @@ function actuator:initialize(parent, frame, shape)
     self.frame = frame
     self.jointFrame = frame
     self.shape = shape
-    self.ltheta = 0
 
     self.theta = posAngMatrix(0, 0, 0)
     self.dtheta = matrix{0,0,0,0}
@@ -150,13 +150,11 @@ end
 
 function actuator:measureJoint()
     local theta, dtheta = self.joint:getJointAngle(), self.joint:getJointSpeed()
-    local ddtheta = (dtheta - self.ltheta) / robot.dt
-    self.ltheta = dtheta
     self.theta = posAngMatrix(0, 0, theta)
     self.dtheta = matrix{0,0,dtheta,0}
 
-    self.targetDTheta = matrix{0,0,dtheta-theta*0,0}
-    self.targetDDTheta = matrix{0,0,ddtheta,0}
+    self.targetDTheta = matrix{0,0,0,0}
+    self.targetDDTheta = matrix{0,0,-theta*4 - dtheta*2,0}
 
     self.jointFrame = self.frame * self.theta
     self.jointFrameInv = invertHMatrix(self.jointFrame)
@@ -166,8 +164,7 @@ end
 function actuator:jointControl()
     local perr = (0 - self.theta[3][1]) * 200
     local derr = (0 - self.dtheta[3][1]) * 20
-    self:applyTorque(self.n[3][1]*0.1)
-    self.body:applyForce(-2,0)
+    self:applyTorque(self.n[3][1])
 end
 
 function actuator:calcForward()
